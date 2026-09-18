@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: creativeflow-postgres
+    environment:
+      POSTGRES_DB: creativeflow
+      POSTGRES_USER: creativeflow
+      POSTGRES_PASSWORD: creativeflow_local_only
+    ports:
+      - "54329:5432"
+    volumes:
+      - creativeflow_postgres_data:/var/lib/postgresql/data
+volumes:
+  creativeflow_postgres_data:
+    external: true
+    name: server-sass_creativeflow_postgres_data
