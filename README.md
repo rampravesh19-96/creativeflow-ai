@@ -1,71 +1,129 @@
-# CreativeFlow AI
+# CreativeFlow AI — AI Creative Production Workspace
 
-CreativeFlow AI is an AI creative production workspace for turning campaign briefs into structured strategy, copy, visual assets, and reviewable versions.
+Turn a campaign brief into a structured AI strategy, copy, visual assets, and a human-reviewed production record.
 
-## Overview
+**Live demo:** [creativeflow-ai-ten.vercel.app](https://creativeflow-ai-ten.vercel.app)
 
-The product keeps campaign planning, AI generation, human review, asset history, and generation observability in one focused workflow. Clerk protects the workspace, while PostgreSQL persists campaigns, strategies, assets, versions, reviews, and generation metadata.
+CreativeFlow AI brings creative planning, multimodal generation, approval, asset versioning, and generation observability into one focused workflow. It is a production-deployed, full-stack application built around accountable AI-assisted creative work rather than one-off prompts.
 
-## Core workflow
+## Key features
 
-1. Create a campaign brief with its brand, objective, audience, tone, and key message.
-2. Generate a structured campaign strategy.
-3. Generate campaign copy and visual assets.
-4. Regenerate assets while preserving version history.
-5. Approve or reject assets through a human review step.
-6. Inspect generation history and usage information.
+- Convert a creative brief into a structured campaign strategy.
+- Generate campaign copy and visual assets in the same workspace.
+- Keep people in control with explicit asset approval and rejection.
+- Regenerate assets while retaining version history.
+- Persist campaigns, strategies, assets, reviews, and generation runs in PostgreSQL.
+- Inspect provider, model, latency, token, and cost metadata when available.
+- Monitor aggregate usage and recent generation activity.
+- Authenticate workspace access with Clerk.
 
-## Key capabilities
+## Product workflow
 
-- Structured AI strategy generation
-- AI copy generation
-- Visual generation workflow
-- Human approval and rejection
-- Asset regeneration and version history
-- Generation history and usage visibility
-- PostgreSQL persistence
-- Clerk authentication
-- Responsive production-workspace UI
+```text
+Creative brief
+  -> Structured AI strategy
+  -> Copy + visual generation
+  -> Human review / approval
+  -> Versioned assets
+  -> Generation history + usage observability
+```
 
-## Tech stack
+## Product tour
 
-- Web: React, Vite, TypeScript, Clerk
-- API: Express, TypeScript, Zod
-- Data: PostgreSQL
-- Text and strategy: Gemini (`gemini-3.5-flash-lite`)
-- Visual pipeline: Gemini, Clipdrop, and Cloudinary
-- Testing: Vitest
+### Campaign workspace
 
-## Architecture
+![CreativeFlow campaign workspace](docs/screenshots/creativeflow-workspace.PNG)
 
-The repository contains two independently installable npm applications:
+### AI strategy
 
-- `apps/web`: browser application and API client
-- `apps/api`: HTTP API, provider integrations, persistence, tests, and SQL migration
+![CreativeFlow AI strategy](docs/screenshots/creativeflow-ai-strategy.PNG)
 
-The API owns authentication enforcement, validation, generation orchestration, review state, and persistence. The web application consumes its `/api/v1` endpoints.
+### Asset production and review
+
+![CreativeFlow assets](docs/screenshots/creativeflow-assets.PNG)
+
+### Generation history
+
+![CreativeFlow generation history](docs/screenshots/creativeflow-observability.PNG)
+
+### Usage observability
+
+![CreativeFlow usage dashboard](docs/screenshots/creativeflow-usage.PNG)
+
+### Create a campaign
+
+![Create a CreativeFlow campaign](docs/screenshots/creativeflow-create-campaign.PNG)
+
+## Architecture and stack
+
+| Area | Technology |
+| --- | --- |
+| Frontend | React, TypeScript, Vite |
+| Backend | Express, TypeScript |
+| Data | PostgreSQL with raw SQL migrations |
+| Authentication | Clerk |
+| Validation | Zod |
+| Structured generation | Gemini |
+| Image generation | Clipdrop |
+| Asset hosting | Cloudinary |
+
+The repository contains two applications:
+
+- `apps/web` — the Vite browser client and authenticated API consumer.
+- `apps/api` — the Express API, validation, PostgreSQL persistence, provider integrations, and migrations.
+
+## Engineering highlights
+
+- Structured LLM outputs are validated before entering the persisted workflow.
+- The API records each generation run with provider/model, timing, token, and cost fields when the provider supplies them.
+- Human review status and asset versions make regenerated creative work traceable.
+- Raw SQL migrations use a migration ledger, PostgreSQL advisory lock, transactional application, and bounded connection retry handling for repeatable deployments.
+- The deployed system has been production-tested across sign-in, persistence, strategy/copy/visual generation, approval, refresh persistence, history, and usage views.
 
 ## Local development
 
-Requirements: Node.js 22+, npm, Docker, and a Clerk development application.
+Requires Node.js 22+, npm, Docker, and a Clerk development application.
 
-1. Copy each application's `.env.example` to its local `.env` and provide development credentials. Never commit local env files.
-2. Start PostgreSQL:
+1. Create local environment files from the examples:
+
+   ```bash
+   cp apps/api/.env.example apps/api/.env.local
+   cp apps/web/.env.example apps/web/.env
+   ```
+
+2. Supply placeholder-backed development values only in your untracked local files:
+
+   ```dotenv
+   # apps/api/.env.local
+   PORT=<PORT>
+   NODE_ENV=<NODE_ENV>
+   DATABASE_URL=<POSTGRES_CONNECTION_URL>
+   CLERK_SECRET_KEY=<CLERK_SECRET_KEY>
+   CLIENT_ORIGIN=<WEB_ORIGIN>
+   GEMINI_API_KEY=<GEMINI_API_KEY>
+   GEMINI_MODEL=<GEMINI_MODEL>
+   CLIPDROP_API_KEY=<CLIPDROP_API_KEY>
+   CLOUDINARY_CLOUD_NAME=<CLOUDINARY_CLOUD_NAME>
+   CLOUDINARY_API_KEY=<CLOUDINARY_API_KEY>
+   CLOUDINARY_API_SECRET=<CLOUDINARY_API_SECRET>
+   AI_PROVIDER_MODE=<AI_PROVIDER_MODE>
+
+   # apps/web/.env
+   VITE_CLERK_PUBLISHABLE_KEY=<CLERK_PUBLISHABLE_KEY>
+   VITE_API_URL=<API_BASE_URL>
+   ```
+
+3. Start PostgreSQL and the API:
 
    ```bash
    docker compose -f apps/api/docker-compose.yml up -d
-   ```
-
-3. Apply `apps/api/migrations/001_creativeflow.sql` to the local database.
-4. Install and start the API:
-
-   ```bash
    cd apps/api
    npm ci
+   npm run migrate
    npm run dev
    ```
 
-5. In another terminal, install and start the web app:
+4. In another terminal, start the web app:
 
    ```bash
    cd apps/web
@@ -73,26 +131,9 @@ Requirements: Node.js 22+, npm, Docker, and a Clerk development application.
    npm run dev
    ```
 
-The included Docker Compose configuration retains PostgreSQL data in the `creativeflow_postgres_data` volume and exposes the database on host port `54329`.
+## Quality checks
 
-## Project structure
-
-```text
-creativeflow-ai/
-├── apps/
-│   ├── api/
-│   └── web/
-├── docs/
-│   └── screenshots/
-├── .github/
-│   └── workflows/
-├── .gitignore
-└── README.md
-```
-
-## Testing
-
-Run the quality checks independently in both `apps/web` and `apps/api`:
+Run these in both `apps/api` and `apps/web`:
 
 ```bash
 npm run lint
@@ -102,8 +143,12 @@ npm run build
 npm run format:check
 ```
 
-Provider tests use deterministic mock mode and do not require live generation calls.
+The API test suite includes focused migration-runner coverage as well as health, provider, and database-dependent workflow tests.
 
-## Deployment architecture
+## Deployment
 
-Deployment targets and public URLs will be documented after production infrastructure is configured and verified.
+- Frontend: [Vercel](https://creativeflow-ai-ten.vercel.app)
+- Backend: Render web service
+- Database: PostgreSQL
+
+The Render build installs build-time dependencies, compiles the API, and runs idempotent migrations before starting the compiled Express server. The frontend is configured at build time with `VITE_API_URL` and communicates with the API under `/api/v1`.
