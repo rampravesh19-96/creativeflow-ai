@@ -115,7 +115,7 @@ async function runMigrationAttempt({
       }
     }
     client.off("error", onClientError);
-    client.release();
+    client.release(clientError);
   }
 }
 
